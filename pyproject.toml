@@ -1,0 +1,27 @@
+[project]
+name = "dock"
+version = "0.1.0"
+description = "Morning inbox for coding agents — claims need evidence."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Gaurav Kumar" }]
+keywords = ["agents", "github", "mcp", "cursor", "claude"]
+
+[project.urls]
+Homepage = "https://github.com/mobigaurav/dock"
+Documentation = "https://github.com/mobigaurav/dock/blob/main/docs/SYSTEM_DESIGN.md"
+
+[project.scripts]
+dock = "dock.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

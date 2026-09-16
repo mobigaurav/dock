@@ -1,0 +1,11 @@
+{
+  "targets": [
+    {
+      "id": "example",
+      "name": "This checkout",
+      "path": ".",
+      "status": "active",
+      "notes": "Copy to dogfood.local.json and point path at repos you actually ship."
+    }
+  ]
+}
