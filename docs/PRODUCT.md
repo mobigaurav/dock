@@ -81,21 +81,7 @@ The engine reads git and `gh`. It does not require the project to have been buil
 
 `dock merge --pr N --execute` only runs if stdin is a TTY and a person types `MERGE #N`. Failed claims block execute. Unknown claims block execute unless that person also passes `--accept-unknown`. Agents are instructed not to run `--execute` and cannot satisfy the TTY gate by piping.
 
-## Dogfood
-
-Mature Dock on the three products that will actually see agent PRs:
-
-1. **Arogya AI** (`--target arogya`) — active
-2. **Vedic AI** (`--target vedic`) — active
-3. **Dhan AI** (`--target dhan`) — planned; turn it on the day the repo exists so the first PR already has a gate
-
-`python3 -m dock dogfood` (needs `dogfood.local.json`)
-
-## Monetization (not in this repo yet)
-
-The CLI, skill, and MCP stay free. Do not add a pricing UI or Stripe until a hosted GitHub App exists (system design §10). Vedic AI’s Stripe integration is a different product and a different Stripe account — copy the *pattern* later, not the keys or the service.
-
-## v1 surface
+## Surface
 
 - Uncommitted work and recent commits (facts from git)
 - Open PRs (facts from `gh` when available)

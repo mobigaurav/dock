@@ -1,8 +1,6 @@
 # Dock — system design
 
-How Dock works today, what it does not do, and where a hosted product would start.
-
-Product positioning lives in [PRODUCT.md](PRODUCT.md). This document is the mechanism.
+How Dock works. Product positioning lives in [PRODUCT.md](PRODUCT.md).
 
 ## 1. Problem in one line
 
@@ -13,7 +11,7 @@ Agents write faster than humans can check whether the **prose about the change**
 1. **Facts and verdicts are not the model.** Git and GitHub are the source of files, authors, and PR bodies. Checkers return pass / fail / unknown. The LLM (Cursor, Claude, …) may narrate the inbox; it may not invent PRs or mark pass from confidence.
 2. **Unknown is not pass.** A claim we cannot prove is a human item.
 3. **Humans merge.** Preview may show a GitHub Merge button. Execute requires a TTY and the exact phrase `MERGE #<n>`. MCP has no merge tool.
-4. **No cloud in v1.** No LLM API keys, no database, no Stripe, no servers. If git and `gh` work, Dock works.
+4. **Local.** No account and no API key. If git and `gh` work, Dock works.
 5. **Tool-agnostic.** Cursor is one client. Claude uses MCP. Copilot/Codex PRs are still git objects.
 
 ## 3. Context diagram
@@ -133,33 +131,17 @@ MCP exposes only `dock_merge_preview`. A model cannot satisfy the TTY gate throu
 
 **MCP.** Newline-delimited JSON-RPC 2.0 on stdio (`protocolVersion` 2024-11-05). Tools: `dock_inbox`, `dock_merge_preview`. Claude Desktop / Claude Code spawn `python3 -m dock mcp`.
 
-## 9. What v1 does not contain (on purpose)
+## 9. Trust boundary
 
-- No LLM provider, embeddings, or RAG
-- No database, queue, or object storage
-- No Stripe, seats, or pricing page
-- No GitHub App, no required status check on the Merge button
-- No multi-tenant cloud
+Dock does not call an LLM, does not store tokens, and does not need a Dock server. Evidence is local subprocesses against git and `gh`. The operator’s GitHub credentials stay in `gh`; Dock does not copy them.
 
-Vedic AI’s Stripe account and web checkout are a **different product**. Do not point Dock billing at that code or those keys.
+## 10. Optional GitHub App
 
-## 10. Later: hosted layer (only when people already use the CLI)
+A required status check on pull requests needs a URL GitHub can call. That would be a GitHub App plus HTTPS webhook, not a change to the local evidence engine. The CLI remains the same command.
 
-The OSS engine stays local and MIT. A paid product would be a **new** surface:
+## 11. Local aliases
 
-| Job | Why cloud | Sketch |
-|---|---|---|
-| Required check on GitHub | GitHub must call a URL on every PR | GitHub App + HTTPS webhook |
-| Team policy / audit log | Orgs want a receipt | Small API + Postgres |
-| Seats | Charge after pull, not before | **New** Stripe account, Checkout, customer portal — same *pattern* as Vedic, not the Vedic service |
-
-That webhook receiver is the first thing that needs a deploy (Fly, Cloud Run, or Lambda). Until then, `pip install` + `dock inbox` is the whole deployment story.
-
-Monetization boundary: local CLI/skill/MCP remain free. Charge for org policy, status checks, and SSO — not for running evidence on a laptop.
-
-## 11. Dogfood vs public use
-
-`dogfood.local.json` (gitignored) lists this author’s apps: Arogya AI, Vedic AI, Dhan AI. Everyone else runs:
+`dogfood.local.json` is gitignored. It is only for `--target` shortcuts on your machine. Public usage is:
 
 ```bash
 dock inbox --path /path/to/any/git/repo

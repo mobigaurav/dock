@@ -53,12 +53,8 @@ MCP tools: `dock_inbox`, `dock_merge_preview`. There is no merge tool.
 
 ## Use on GitHub PRs
 
-Copy [examples/github-inbox.yml](examples/github-inbox.yml) into another repo after this project is on GitHub.
+Copy [examples/github-inbox.yml](examples/github-inbox.yml) into another repo.
 
-## What this version is not
+## Optional shortcuts
 
-No cloud, no Stripe, no pricing page, no GitHub App. Those belong to a later hosted product (see system design §10). The Vedic AI Stripe stack is a different product — do not reuse that account or service for Dock.
-
-## Maintainer dogfood
-
-Copy `dogfood.example.json` to `dogfood.local.json` (gitignored) if you want `dock dogfood` / `--target` shortcuts. Everyone else uses `--path`.
+Copy `dogfood.example.json` to `dogfood.local.json` (gitignored) if you want `--target` aliases. Otherwise use `--path`.
