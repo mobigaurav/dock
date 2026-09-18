@@ -1,0 +1,37 @@
+# Publish dock-inbox to PyPI when a GitHub Release is published.
+#
+# One-time: on https://pypi.org/manage/account/publishing/
+# add a trusted publisher for project dock-inbox
+#   owner: mobigaurav
+#   repo: dock
+#   workflow: pypi.yml
+#   environment: pypi
+#
+# Then create the empty project on PyPI (or let the first trusted upload create it
+# if your account allows).
+
+name: pypi
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          python -m pip install -U pip build
+          python -m build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
