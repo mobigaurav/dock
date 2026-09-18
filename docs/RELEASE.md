@@ -8,10 +8,14 @@ Product and CLI: **Dock**. PyPI name: **`dock-inbox`**. Import package: `dock`.
 
 1. Merge this work to `main` and `git tag v0.1.0 && git push origin main --tags`.
 2. Create a GitHub Release from that tag.
-3. PyPI trusted publishing (preferred) or a one-time token:
-   - [pypi.org/manage/account](https://pypi.org/manage/account/) → API token, or GitHub Actions trusted publisher for `mobigaurav/dock`.
-   - Build: `python -m pip install build twine && python -m build`
-   - Upload: `twine upload dist/*` (or the official `pypa/gh-action-pypi-publish` workflow).
+3. PyPI trusted publishing (one-time in the browser, then re-run the failed `pypi` workflow):
+   - Log in at [pypi.org](https://pypi.org/account/login/).
+   - [Pending publishers](https://pypi.org/manage/account/publishing/) → add **dock-inbox**:
+     - Owner: `mobigaurav`
+     - Repository: `dock`
+     - Workflow: `pypi.yml`
+     - Environment: `pypi`
+   - Re-run [the v0.1.0 publish job](https://github.com/mobigaurav/dock/actions). First upload creates the project.
 4. Verify: `pip install dock-inbox==0.1.0 && dock --help`
 5. Point Arogya’s `.github/workflows/dock.yml` at `pip install dock-inbox==0.1.0` instead of `git+https`.
 
