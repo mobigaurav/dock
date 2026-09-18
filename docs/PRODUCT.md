@@ -26,7 +26,7 @@ Enterprises already buy this category for other floods: Snyk does not mean they 
 ## What the buyer is actually buying
 
 1. **Volume.** Cursor, Claude Code, and Copilot turned one PR into ten. Review capacity did not 10x. The merge queue is the new bottleneck.
-2. **Claim verification.** Developers read diffs. They are slow at checking prose (“backward compatible”, “no extra queries”, “covers the empty state”) against the tree. Dock fail-closes those sentences against git, tests, and search.
+2. **Claim verification.** Developers read diffs. They are slow at checking prose (“backward compatible”, “no extra queries”, “covers the empty state”) against the tree. Dock fail-closes those sentences against git paths and the patch. It does not run the test suite or call a model.
 3. **Audit.** “A senior LGTM’d a 2,000-line agent PR” is a weak story after an incident. Pass/fail/unknown cards are a receipt. Unknown is not green.
 4. **Morale.** Staff engineers did not join to babysit bots. If the clerical layer is mechanical, they keep doing the job only a human can do.
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from dock.claims import extract_claims
-from dock.collect import PullRequestSnapshot, collect_pr, merge_pr
+from dock.collect import PullRequestSnapshot, collect_pr, collect_pr_diff, merge_pr
 from dock.evidence import check_claims
 from dock.models import Claim
 
@@ -46,9 +46,14 @@ def confirmation_phrase(pr: int) -> str:
     return f"MERGE #{pr}"
 
 
-def preview_from_pr(pr: PullRequestSnapshot, *, accept_unknown: bool = False) -> MergePreview:
+def preview_from_pr(
+    pr: PullRequestSnapshot,
+    *,
+    accept_unknown: bool = False,
+    diff_text: str | None = None,
+) -> MergePreview:
     texts = extract_claims(pr.body) or extract_claims(pr.title)
-    claims = check_claims(texts, pr.files)
+    claims = check_claims(texts, pr.files, diff_text)
     reasons: list[str] = []
     if pr.is_draft:
         reasons.append("draft PRs cannot merge")
@@ -79,7 +84,8 @@ def preview_from_pr(pr: PullRequestSnapshot, *, accept_unknown: bool = False) ->
 
 def preview_merge(path, pr_number: int, *, accept_unknown: bool = False) -> MergePreview:
     pr = collect_pr(path, pr_number)
-    return preview_from_pr(pr, accept_unknown=accept_unknown)
+    diff = collect_pr_diff(path, pr_number)
+    return preview_from_pr(pr, accept_unknown=accept_unknown, diff_text=diff or None)
 
 
 def render_merge_preview(preview: MergePreview) -> str:

@@ -212,6 +212,17 @@ def collect_pr(path: Path, number: int) -> PullRequestSnapshot:
     return _pr_from_row(row)
 
 
+def collect_pr_diff(path: Path, number: int) -> str:
+    """Patch text for evidence. Empty string if gh cannot produce a diff."""
+    if shutil.which("gh") is None:
+        return ""
+    root = git_root(path)
+    proc = _run(["gh", "pr", "diff", str(number)], cwd=root, timeout=90)
+    if proc.returncode != 0:
+        return ""
+    return proc.stdout or ""
+
+
 def merge_pr(path: Path, number: int, method: str = "squash") -> str:
     if shutil.which("gh") is None:
         raise CollectError("gh not on PATH; cannot merge")

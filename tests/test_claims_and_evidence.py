@@ -40,8 +40,55 @@ def test_tests_claim_passes_with_test_path():
     assert claim.verdict == "pass"
 
 
+def test_skips_test_plan_run_commands_keeps_summary():
+    body = """
+## Summary
+- Adds unit tests for cache miss
+- Points the marketing site and README at the public Play listing
+
+## Test plan
+- [ ] `cd apps/mobile && npx jest src/calm/streak.test.ts src/calm/sessions.test.ts --watchman=false`
+- [ ] Confirm Vercel NEXT_PUBLIC_PLAY_STORE_URL is unset or set to the public listing, so the marketing site does not keep the internal testers URL after this ships
+"""
+    claims = extract_claims(body)
+    assert "Adds unit tests for cache miss" in claims
+    assert all("jest" not in c.lower() for c in claims)
+    assert all("streak.test.ts" not in c for c in claims)
+    assert any("NEXT_PUBLIC_PLAY_STORE_URL" in c for c in claims)
+
+
 def test_docs_claim_fails_without_readme():
     claim = check_claim("Updates README", ["src/cache.py"])
+    assert claim.verdict == "fail"
+
+
+def test_docs_claim_readme_path_alone_is_unknown():
+    claim = check_claim("Updates README", ["README.md"])
+    assert claim.verdict == "unknown"
+    assert "path alone" in (claim.evidence or "")
+
+
+def test_docs_claim_passes_when_url_is_in_patch():
+    patch = (
+        "--- a/README.md\n+++ b/README.md\n"
+        "-https://play.google.com/apps/internaltest/1\n"
+        "+https://play.google.com/store/apps/details?id=com.mobigaurav.healthai\n"
+    )
+    claim = check_claim(
+        "README now links to https://play.google.com/store/apps/details?id=com.mobigaurav.healthai",
+        ["README.md"],
+        patch,
+    )
+    assert claim.verdict == "pass"
+
+
+def test_docs_claim_fails_when_url_missing_from_patch():
+    patch = "--- a/README.md\n+++ b/README.md\n+hello\n"
+    claim = check_claim(
+        "README links to https://example.com/store",
+        ["README.md"],
+        patch,
+    )
     assert claim.verdict == "fail"
 
 

@@ -1,12 +1,12 @@
 [project]
-name = "dock"
+name = "dock-inbox"
 version = "0.1.0"
-description = "Morning inbox for coding agents — claims need evidence."
+description = "Dock — morning inbox for coding agents. Claims need evidence. Humans still merge."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Gaurav Kumar" }]
-keywords = ["agents", "github", "mcp", "cursor", "claude"]
+keywords = ["agents", "github", "mcp", "cursor", "claude", "pull-request", "claims"]
 
 [project.urls]
 Homepage = "https://github.com/mobigaurav/dock"

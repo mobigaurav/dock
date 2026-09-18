@@ -13,7 +13,7 @@ description: >-
 The engine is git + GitHub. Cursor is one client. Claude uses `dock mcp`.
 Unknown is not pass. Agents must not merge.
 
-Prefer the `dock` binary if it is on PATH (`pip install -e /path/to/dock`).
+Prefer the `dock` binary if it is on PATH (`pip install dock-inbox`).
 
 ## Inbox
 
@@ -40,6 +40,8 @@ dock merge --path <repo> --pr <n>
 2. Show the **Merge button** URL. That is the click.
 3. Do not pass `--execute`, do not type `MERGE #N`, do not pipe confirmation, do not call `gh pr merge`.
 4. CLI merge is only for the human’s own terminal: `dock merge --pr <n> --execute`
+
+Dock does not call a model. Test-plan `npx jest` lines are not claims. A README path without a URL in the claim stays **unknown**.
 
 Fail blocks execute. Unknown blocks execute unless they pass `--accept-unknown` themselves.
 

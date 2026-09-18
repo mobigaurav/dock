@@ -19,6 +19,16 @@ _SKIP_PREFIXES = (
 _HEADING_RE = re.compile(r"^#{1,6}\s+")
 _BULLET_RE = re.compile(r"^\s*(?:[-*]|\d+\.)\s+")
 _CHECKBOX_RE = re.compile(r"^\s*(?:[-*]\s+)?\[(?: |x|X)\]\s+")
+_SKIP_SECTION = re.compile(r"^(test plan|checklist|how to test|qa)\b", re.I)
+_RUN_HINT = re.compile(
+    r"^(cd |npx |npm |pnpm |yarn |bun |make |pytest |cargo |go test\b)"
+    r"|\b(npx |npm test|pytest |jest )\b",
+    re.I,
+)
+_TEST_FILE_RUN = re.compile(
+    r"\.(test|spec)\.(ts|tsx|js|jsx|py)\b",
+    re.I,
+)
 
 # A line is claim-like if it asserts something about the change.
 _CLAIM_HINT = re.compile(
@@ -52,14 +62,36 @@ def _should_skip(line: str) -> bool:
     return False
 
 
+def _is_run_instruction(line: str) -> bool:
+    """Test-plan commands are not claims. 'Files exist' is not 'tests passed'."""
+    stripped = line.strip().strip("`")
+    if _RUN_HINT.search(stripped):
+        return True
+    if _TEST_FILE_RUN.search(stripped) and re.search(
+        r"\b(run|npx|npm|jest|pytest|ci)\b", stripped, re.I
+    ):
+        return True
+    return False
+
+
 def extract_claims(prose: str | None) -> list[str]:
     if not prose:
         return []
     seen: set[str] = set()
     out: list[str] = []
+    skip_section = False
     for raw in prose.splitlines():
+        heading_only = _HEADING_RE.match(raw.strip())
+        if heading_only:
+            title = _HEADING_RE.sub("", raw.strip()).strip()
+            skip_section = bool(_SKIP_SECTION.match(title))
+            continue
         line = _strip_line(raw)
         if _should_skip(line):
+            continue
+        if skip_section and _is_run_instruction(line):
+            continue
+        if _is_run_instruction(line) and _TEST_FILE_RUN.search(line):
             continue
         if not _CLAIM_HINT.search(line):
             continue

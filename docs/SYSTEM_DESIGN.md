@@ -89,8 +89,10 @@ repo path + since
 | Claim shape | Pass | Fail | Unknown |
 |---|---|---|---|
 | Names a file (`src/foo.py`) | That path is in the diff | Path not in the diff | No file list |
-| Mentions tests | A test/spec path is in the diff | None is | No file list |
-| Mentions README/docs | A docs path is in the diff | None is | No file list |
+| Mentions tests (Summary) | A test/spec path is in the diff | None is | No file list |
+| Test plan run commands (`npx jest a.test.ts`) | — | — | **Not extracted** |
+| Mentions README/docs **and a URL** | URL is in the patch (`+` hunks) | URL not in the patch | No patch |
+| Mentions README/docs, no URL | — | No docs path in the diff | Docs path changed; will not pass on path alone |
 | “No API change” / backward compatible | Never in v1 | Patch removes an exported symbol | Otherwise — cannot prove a negative |
 | Anything else | — | — | No checker matched |
 
@@ -102,7 +104,7 @@ Empty file list ⇒ **unknown**, not fail (missing evidence is not a contradicti
 dock merge --pr N
         │
         ▼
- gh pr view → extract claims → evidence
+ gh pr view → extract claims → gh pr diff → evidence
         │
         ├─ blocked if draft
         ├─ blocked if any fail

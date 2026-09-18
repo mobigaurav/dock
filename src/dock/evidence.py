@@ -17,6 +17,7 @@ FILE_IN_CLAIM_RE = re.compile(
     r"\b([\w./-]+\.(?:py|ts|tsx|js|jsx|go|rs|rb|md|json|yml|yaml|toml))\b",
     re.I,
 )
+URL_IN_CLAIM_RE = re.compile(r"https?://[^\s)\]>'\"`]+", re.I)
 TESTS_IN_CLAIM_RE = re.compile(r"\b(tests?|specs?|coverage|unit tests?|e2e)\b", re.I)
 DOCS_IN_CLAIM_RE = re.compile(r"\b(readme|docs?|documentation)\b", re.I)
 NO_API_RE = re.compile(
@@ -48,6 +49,61 @@ def test_files(paths: list[str]) -> list[str]:
 
 def doc_files(paths: list[str]) -> list[str]:
     return [p for p in paths if DOC_PATH_RE.search(_norm(p))]
+
+
+def _added_hunks(diff_text: str) -> str:
+    lines = [
+        line[1:]
+        for line in diff_text.splitlines()
+        if line.startswith("+") and not line.startswith("+++")
+    ]
+    return "\n".join(lines)
+
+
+def _claim_urls(text: str) -> list[str]:
+    return [u.rstrip(".,;>") for u in URL_IN_CLAIM_RE.findall(text)]
+
+
+def _docs_claim(text: str, files: list[str], diff_text: str | None) -> Claim:
+    """README-in-the-file-list is not proof of the docs claim. Need a URL in the patch."""
+    docs = doc_files(files)
+    urls = _claim_urls(text)
+    if urls:
+        if not diff_text:
+            return Claim(
+                text=text,
+                verdict="unknown",
+                checker="docs_in_diff",
+                evidence="claim names a URL; no patch to search",
+            )
+        added = _added_hunks(diff_text)
+        missing = [u for u in urls if u not in added and u not in diff_text]
+        if missing:
+            return Claim(
+                text=text,
+                verdict="fail",
+                checker="docs_in_diff",
+                evidence=f"claimed URL not in the patch: {', '.join(missing)}",
+            )
+        return Claim(
+            text=text,
+            verdict="pass",
+            checker="docs_in_diff",
+            evidence=f"URL in patch: {', '.join(urls)}",
+        )
+    if not docs:
+        return Claim(
+            text=text,
+            verdict="fail",
+            checker="docs_in_diff",
+            evidence="claim mentions docs; no README/docs path in the diff",
+        )
+    return Claim(
+        text=text,
+        verdict="unknown",
+        checker="docs_in_diff",
+        evidence="README/docs changed; no URL in the claim — will not pass on a path alone",
+    )
 
 
 def api_surface_files(paths: list[str]) -> list[str]:
@@ -106,20 +162,7 @@ def check_claim(text: str, diff_files: list[str], diff_text: str | None = None) 
         )
 
     if DOCS_IN_CLAIM_RE.search(text):
-        docs = doc_files(files)
-        if docs:
-            return Claim(
-                text=text,
-                verdict="pass",
-                checker="docs_in_diff",
-                evidence=f"doc paths: {', '.join(docs[:6])}",
-            )
-        return Claim(
-            text=text,
-            verdict="fail",
-            checker="docs_in_diff",
-            evidence="claim mentions docs; no README/docs path in the diff",
-        )
+        return _docs_claim(text, files, diff_text)
 
     if NO_API_RE.search(text):
         # Fail-closed: we can falsify, we cannot prove.
