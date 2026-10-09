@@ -110,6 +110,11 @@ def test_named_file_must_appear():
     assert claim.verdict == "fail"
     claim_ok = check_claim("Fixes src/dock/cli.py timeout handling", ["src/dock/cli.py"])
     assert claim_ok.verdict == "pass"
+    sh_ok = check_claim(
+        "Adds scripts/open-dev-to-main-pr.sh so release PRs copy dest titles",
+        ["scripts/open-dev-to-main-pr.sh"],
+    )
+    assert sh_ok.verdict == "pass"
 
 
 def test_named_dir_passes_when_a_child_path_changed():

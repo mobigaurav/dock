@@ -14,7 +14,7 @@ TEST_PATH_RE = re.compile(
 )
 DOC_PATH_RE = re.compile(r"(^|/)(readme(\.[a-z]+)?$|docs?/)", re.I)
 FILE_IN_CLAIM_RE = re.compile(
-    r"\b([\w./-]+\.(?:py|ts|tsx|js|jsx|go|rs|rb|md|json|yml|yaml|toml))\b",
+    r"\b([\w./-]+\.(?:py|ts|tsx|js|jsx|go|rs|rb|md|json|yml|yaml|toml|sh))\b",
     re.I,
 )
 TICK_RE = re.compile(r"`([^`]+)`")
