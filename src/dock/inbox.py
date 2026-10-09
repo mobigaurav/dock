@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from dock.claims import extract_claims
+from dock.claims import claims_from_sources, extract_claims
 from dock.collect import CollectError, collect_local, collect_prs
 from dock.evidence import check_claims
 from dock.models import Claim, Inbox, InboxItem
@@ -73,7 +73,8 @@ def build_inbox(path: Path, since: str = "24h") -> Inbox:
         )
 
     for pr in prs:
-        texts = extract_claims(pr.body) or extract_claims(pr.title)
+        extra = "\n".join(pr.commit_messages)
+        texts = claims_from_sources(title=pr.title, body=pr.body, extra=extra or None)
         claims = check_claims(texts, pr.files)
         items.append(
             InboxItem(

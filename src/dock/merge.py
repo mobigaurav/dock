@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dock.claims import extract_claims
+from dock.claims import claims_from_sources
 from dock.collect import PullRequestSnapshot, collect_pr, collect_pr_diff, merge_pr
 from dock.evidence import check_claims
 from dock.models import Claim
@@ -52,7 +52,8 @@ def preview_from_pr(
     accept_unknown: bool = False,
     diff_text: str | None = None,
 ) -> MergePreview:
-    texts = extract_claims(pr.body) or extract_claims(pr.title)
+    extra = "\n".join(pr.commit_messages)
+    texts = claims_from_sources(title=pr.title, body=pr.body, extra=extra or None)
     claims = check_claims(texts, pr.files, diff_text)
     reasons: list[str] = []
     if pr.is_draft:

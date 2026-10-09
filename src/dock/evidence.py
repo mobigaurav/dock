@@ -17,6 +17,22 @@ FILE_IN_CLAIM_RE = re.compile(
     r"\b([\w./-]+\.(?:py|ts|tsx|js|jsx|go|rs|rb|md|json|yml|yaml|toml))\b",
     re.I,
 )
+TICK_RE = re.compile(r"`([^`]+)`")
+IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.-]{7,}$")
+GENERIC_TICKS = {
+    "google",
+    "apple",
+    "android",
+    "ios",
+    "main",
+    "true",
+    "false",
+    "none",
+    "null",
+    "todo",
+    "pass",
+    "fail",
+}
 URL_IN_CLAIM_RE = re.compile(r"https?://[^\s)\]>'\"`]+", re.I)
 TESTS_IN_CLAIM_RE = re.compile(r"\b(tests?|specs?|coverage|unit tests?|e2e)\b", re.I)
 DOCS_IN_CLAIM_RE = re.compile(r"\b(readme|docs?|documentation)\b", re.I)
@@ -62,6 +78,53 @@ def _added_hunks(diff_text: str) -> str:
 
 def _claim_urls(text: str) -> list[str]:
     return [u.rstrip(".,;>") for u in URL_IN_CLAIM_RE.findall(text)]
+
+
+def _named_dirs(text: str) -> list[str]:
+    """Backticked paths without a file extension, e.g. `apps/mobile`."""
+    dirs: list[str] = []
+    seen: set[str] = set()
+    for raw in TICK_RE.findall(text):
+        path = raw.strip().strip("/")
+        if not path or "/" not in path:
+            continue
+        name = PurePosixPath(path).name
+        if "." in name:
+            continue
+        key = path.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        dirs.append(path)
+    return dirs
+
+
+def _dir_in_files(directory: str, files: list[str]) -> str | None:
+    prefix = directory.rstrip("/") + "/"
+    for path in files:
+        if path == directory or path.startswith(prefix):
+            return path
+    return None
+
+
+def _identifiers(text: str) -> list[str]:
+    """Backticked code tokens that are not paths or generic words."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in TICK_RE.findall(text):
+        tok = raw.strip().strip("`")
+        if "/" in tok or tok.lower() in GENERIC_TICKS:
+            continue
+        if FILE_IN_CLAIM_RE.search(tok):
+            continue
+        if not IDENT_RE.match(tok):
+            continue
+        key = tok.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(tok)
+    return out
 
 
 def _docs_claim(text: str, files: list[str], diff_text: str | None) -> Claim:
@@ -143,6 +206,54 @@ def check_claim(text: str, diff_files: list[str], diff_text: str | None = None) 
             verdict="pass",
             checker="named_files_in_diff",
             evidence=f"found {', '.join(found)}",
+        )
+
+    dirs = _named_dirs(text)
+    if dirs:
+        missing = []
+        found = []
+        for directory in dirs:
+            hit = _dir_in_files(directory, files)
+            if hit:
+                found.append(f"{directory} via {hit}")
+            else:
+                missing.append(directory)
+        if missing:
+            return Claim(
+                text=text,
+                verdict="fail",
+                checker="named_dirs_in_diff",
+                evidence=f"claimed {', '.join(missing)} but no matching path in the diff",
+            )
+        return Claim(
+            text=text,
+            verdict="pass",
+            checker="named_dirs_in_diff",
+            evidence=f"found {', '.join(found)}",
+        )
+
+    idents = _identifiers(text)
+    if idents:
+        if not diff_text:
+            return Claim(
+                text=text,
+                verdict="unknown",
+                checker="identifier_in_patch",
+                evidence="claim names a code token; no patch to search",
+            )
+        missing = [tok for tok in idents if tok not in diff_text]
+        if missing:
+            return Claim(
+                text=text,
+                verdict="unknown",
+                checker="identifier_in_patch",
+                evidence=f"token not in the patch (may be console-only): {', '.join(missing)}",
+            )
+        return Claim(
+            text=text,
+            verdict="pass",
+            checker="identifier_in_patch",
+            evidence=f"token in patch: {', '.join(idents)}",
         )
 
     if TESTS_IN_CLAIM_RE.search(text):

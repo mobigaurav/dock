@@ -1,6 +1,6 @@
 [project]
 name = "dock-inbox"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dock — morning inbox for coding agents. Claims need evidence. Humans still merge."
 readme = "README.md"
 requires-python = ">=3.11"
