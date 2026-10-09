@@ -35,6 +35,7 @@ _CLAIM_HINT = re.compile(
     r"\b("
     r"add(?:s|ed|ing)?|remove(?:s|d|ing)?|delet(?:e|es|ed|ing)|"
     r"updat(?:e|es|ed|ing)|fix(?:es|ed|ing)?|introduc(?:e|es|ed)|"
+    r"keep(?:s|ing)?|touch(?:es|ed|ing)?|"
     r"no longer|does not|without|backward|compat|breaking|"
     r"test(?:s|ed|ing)?|coverage|readme|docs?|"
     r"api|endpoint|migrat(?:e|ion)|refactor"
@@ -86,10 +87,11 @@ def extract_claims(prose: str | None) -> list[str]:
             title = _HEADING_RE.sub("", raw.strip()).strip()
             skip_section = bool(_SKIP_SECTION.match(title))
             continue
+        if skip_section:
+            # How-to-test / QA checkboxes are not claims, even when they name files.
+            continue
         line = _strip_line(raw)
         if _should_skip(line):
-            continue
-        if skip_section and _is_run_instruction(line):
             continue
         if _is_run_instruction(line) and _TEST_FILE_RUN.search(line):
             continue
@@ -101,3 +103,13 @@ def extract_claims(prose: str | None) -> list[str]:
         seen.add(key)
         out.append(line)
     return out
+
+
+def claims_from_sources(
+    *,
+    title: str | None = None,
+    body: str | None = None,
+    extra: str | None = None,
+) -> list[str]:
+    """Prefer PR body, then title, then commit messages (promotion PRs)."""
+    return extract_claims(body) or extract_claims(title) or extract_claims(extra)

@@ -3,13 +3,14 @@
 # Comments pass/fail/unknown on the PR. Preview only — never --execute.
 # Humans still click Merge on GitHub.
 #
-# After the first PyPI release, pin: pip install dock-inbox==0.1.0
-# Until then, pin the git tag. CLI remains `dock`.
+# Pin a released version: pip install dock-inbox==0.1.1
+# CLI remains `dock`.
 
 name: dock
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   claims:
@@ -28,7 +29,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Dock
-        run: pip install "git+https://github.com/mobigaurav/dock.git@v0.1.0"
+        run: pip install "dock-inbox==0.1.1"
 
       - name: Write report
         env:

@@ -39,10 +39,12 @@ dock inbox --path .
 | Claim shape | When it can pass |
 |---|---|
 | Names a file | That path is in the diff |
+| Names a directory (`apps/mobile`) | A changed path is under that prefix |
+| Names a code token (`SignInWithApple`) | That token appears in the patch |
 | Mentions tests (in Summary, not a Test plan command) | A test path is in the diff |
 | Mentions README/docs **and a URL** | That URL appears in the patch |
 | Mentions README/docs with no URL | **unknown** — a changed README is not enough |
-| Test plan `npx jest foo.test.ts` | **ignored** — files existing is not tests passing |
+| Test plan / checklist / QA section | **ignored** — how-to-test bullets are not claims |
 | Anything else | **unknown** |
 
 Pass is not an approve. Dock will not merge until a person clicks Merge on GitHub.

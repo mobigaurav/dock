@@ -37,6 +37,7 @@ class PullRequestSnapshot:
     is_draft: bool
     agent_likely: bool
     agent_source: str | None
+    commit_messages: list[str] = field(default_factory=list)
 
 
 def _run(args: list[str], cwd: Path, timeout: int = 30) -> subprocess.CompletedProcess[str]:
@@ -134,6 +135,19 @@ def _files_from_row(row: dict) -> list[str]:
     return files
 
 
+def _commit_messages_from_row(row: dict) -> list[str]:
+    messages: list[str] = []
+    for commit in row.get("commits") or []:
+        if not isinstance(commit, dict):
+            continue
+        headline = str(commit.get("messageHeadline") or "").strip()
+        body = str(commit.get("messageBody") or "").strip()
+        text = "\n".join(p for p in (headline, body) if p)
+        if text:
+            messages.append(text)
+    return messages
+
+
 def _pr_from_row(row: dict) -> PullRequestSnapshot:
     author = ""
     author_raw = row.get("author") or {}
@@ -152,6 +166,7 @@ def _pr_from_row(row: dict) -> PullRequestSnapshot:
         is_draft=bool(row.get("isDraft")),
         agent_likely=likely_agent(login=author, title=title, body=body),
         agent_source=detect_source(login=author, title=title, body=body),
+        commit_messages=_commit_messages_from_row(row),
     )
 
 
@@ -170,7 +185,7 @@ def collect_prs(path: Path) -> tuple[list[PullRequestSnapshot], list[str]]:
             "--limit",
             "30",
             "--json",
-            "number,title,body,url,updatedAt,author,isDraft,files",
+            "number,title,body,url,updatedAt,author,isDraft,files,commits",
         ],
         cwd=root,
         timeout=45,
@@ -198,7 +213,7 @@ def collect_pr(path: Path, number: int) -> PullRequestSnapshot:
             "view",
             str(number),
             "--json",
-            "number,title,body,url,updatedAt,author,isDraft,files",
+            "number,title,body,url,updatedAt,author,isDraft,files,commits",
         ],
         cwd=root,
         timeout=45,

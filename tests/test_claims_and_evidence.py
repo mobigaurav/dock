@@ -1,5 +1,5 @@
 from dock.agentish import detect_source, likely_agent
-from dock.claims import extract_claims
+from dock.claims import claims_from_sources, extract_claims
 from dock.collect import PullRequestSnapshot
 from dock.evidence import check_claim
 from dock.merge import MergeBlocked, confirmation_phrase, execute_merge, preview_from_pr
@@ -25,6 +25,17 @@ Co-authored-by: Cursor <cursor@example.com>
     assert all("Closes" not in c for c in claims)
 
 
+def test_extracts_keep_and_touch_claims():
+    body = """
+## Summary
+- Keep `SignInWithApple` and `Google` on the app client so CI cannot drop them
+- Dest → main touches `apps/mobile` so Fastlane can ship
+"""
+    claims = extract_claims(body)
+    assert any("SignInWithApple" in c for c in claims)
+    assert any("apps/mobile" in c for c in claims)
+
+
 def test_skips_short_and_headings_only():
     assert extract_claims("## Test plan\n\n- x") == []
 
@@ -40,7 +51,7 @@ def test_tests_claim_passes_with_test_path():
     assert claim.verdict == "pass"
 
 
-def test_skips_test_plan_run_commands_keeps_summary():
+def test_skips_entire_test_plan_section():
     body = """
 ## Summary
 - Adds unit tests for cache miss
@@ -49,12 +60,14 @@ def test_skips_test_plan_run_commands_keeps_summary():
 ## Test plan
 - [ ] `cd apps/mobile && npx jest src/calm/streak.test.ts src/calm/sessions.test.ts --watchman=false`
 - [ ] Confirm Vercel NEXT_PUBLIC_PLAY_STORE_URL is unset or set to the public listing, so the marketing site does not keep the internal testers URL after this ships
+- [ ] Merge to dest, then dest → main so Deploy API ships `_deps.py`
 """
     claims = extract_claims(body)
     assert "Adds unit tests for cache miss" in claims
     assert all("jest" not in c.lower() for c in claims)
     assert all("streak.test.ts" not in c for c in claims)
-    assert any("NEXT_PUBLIC_PLAY_STORE_URL" in c for c in claims)
+    assert all("NEXT_PUBLIC_PLAY_STORE_URL" not in c for c in claims)
+    assert all("_deps.py" not in c for c in claims)
 
 
 def test_docs_claim_fails_without_readme():
@@ -97,6 +110,47 @@ def test_named_file_must_appear():
     assert claim.verdict == "fail"
     claim_ok = check_claim("Fixes src/dock/cli.py timeout handling", ["src/dock/cli.py"])
     assert claim_ok.verdict == "pass"
+    sh_ok = check_claim(
+        "Adds scripts/open-dev-to-main-pr.sh so release PRs copy dest titles",
+        ["scripts/open-dev-to-main-pr.sh"],
+    )
+    assert sh_ok.verdict == "pass"
+
+
+def test_named_dir_passes_when_a_child_path_changed():
+    claim = check_claim(
+        "Dest → main touches `apps/mobile` so Fastlane can ship",
+        ["apps/mobile/app.json", "apps/web/package.json"],
+    )
+    assert claim.verdict == "pass"
+    assert claim.checker == "named_dirs_in_diff"
+
+
+def test_named_dir_fails_when_prefix_absent():
+    claim = check_claim("Touches `apps/mobile` for the store build", ["apps/web/package.json"])
+    assert claim.verdict == "fail"
+    assert claim.checker == "named_dirs_in_diff"
+
+
+def test_identifier_in_patch_passes():
+    patch = "+SupportedIdentityProviders: [COGNITO, SignInWithApple, Google]\n"
+    claim = check_claim(
+        "Keep `SignInWithApple` and `Google` on the app client",
+        ["infra/lite/template.yaml"],
+        patch,
+    )
+    assert claim.verdict == "pass"
+    assert claim.checker == "identifier_in_patch"
+
+
+def test_identifier_missing_from_patch_is_unknown():
+    claim = check_claim(
+        "Keep `SignInWithApple` on the app client",
+        ["infra/lite/template.yaml"],
+        "+Description: pool client\n",
+    )
+    assert claim.verdict == "unknown"
+    assert claim.checker == "identifier_in_patch"
 
 
 def test_compat_claim_never_passes():
@@ -145,6 +199,28 @@ def _pr(**kwargs) -> PullRequestSnapshot:
     )
     base.update(kwargs)
     return PullRequestSnapshot(**base)
+
+
+def test_claims_from_sources_uses_commit_messages_when_body_is_generic():
+    texts = claims_from_sources(
+        title="new changes",
+        body="new changes",
+        extra="Fix Metro crypto resolve so Fastlane bundles on CI\nAdds unit tests for cache miss",
+    )
+    assert "Adds unit tests for cache miss" in texts
+
+
+def test_merge_preview_reads_commit_messages_on_promotion_pr():
+    preview = preview_from_pr(
+        _pr(
+            title="new changes",
+            body="new changes",
+            files=["apps/mobile/src/auth/cognito.ts"],
+            commit_messages=["Fix Metro crypto resolve in apps/mobile/src/auth/cognito.ts"],
+        )
+    )
+    assert preview.claims
+    assert preview.claims[0].verdict == "pass"
 
 
 def test_merge_preview_ready_when_tests_land():
