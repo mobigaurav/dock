@@ -41,7 +41,7 @@ dock merge --path <repo> --pr <n>
 3. Do not pass `--execute`, do not type `MERGE #N`, do not pipe confirmation, do not call `gh pr merge`.
 4. CLI merge is only for the human’s own terminal: `dock merge --pr <n> --execute`
 
-Dock does not call a model. Test-plan `npx jest` lines are not claims. A README path without a URL in the claim stays **unknown**.
+Dock does not call a model. The whole Test plan / checklist / QA section is not claims (including file names in how-to-test bullets). A README path without a URL in the claim stays **unknown**. Directory paths (`apps/mobile`) and backticked code tokens in the patch can pass.
 
 Fail blocks execute. Unknown blocks execute unless they pass `--accept-unknown` themselves.
 
